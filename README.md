@@ -2,7 +2,7 @@
 
 Base de conocimiento y herramienta interactiva de **AppSec / DevSecOps** para desarrolladores que crean productos nuevos o mantienen sistemas existentes. Busca que el código llegue a producción con menos vulnerabilidades y que la auditoría no encuentre lo de siempre.
 
-**Herramienta web:** https://rogerf5-security.github.io/Gu-a-Practica-Para-Desarrollo-Seguro/
+**Herramienta web:** https://rogerf5-security.github.io/Gu-a-Practica-Para-Desarrollo-Seguro
 
 ## Qué incluye la herramienta web
 
