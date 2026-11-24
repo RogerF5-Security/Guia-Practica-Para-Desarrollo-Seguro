@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- La página aplica lo que recomienda: CSP estricta sin scripts inline ni recursos externos,
+       Trusted Types obligatorio (no se crea ninguna política: no hay sinks HTML en el código). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="color-scheme" content="light dark">
+  <title>Guía Práctica de Desarrollo Seguro · Herramienta para desarrolladores</title>
+  <meta name="description" content="Herramienta interactiva con lo esencial de desarrollo seguro: checklist personalizado, generador de cabeceras, CSP y cookies, analizador de respuestas HTTP y escáner local de código.">
+  <meta name="theme-color" content="#1d4ed8">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#inicio">
+        <img src="assets/img/favicon.svg" alt="" width="32" height="32">
+        <span>Desarrollo Seguro<small>Guía práctica para devs</small></span>
+      </a>
+      <div class="header-actions">
+        <a class="btn" href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro">Repositorio</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Secciones">
+      <ol>
+        <li><a href="#inicio"><span class="num">01</span>Reglas de oro</a></li>
+        <li><a href="#checklist"><span class="num">02</span>Mi checklist</a></li>
+        <li><a href="#si-o-no"><span class="num">03</span>¿Sí o no?</a></li>
+        <li><a href="#inputs"><span class="num">04</span>Inputs</a></li>
+        <li><a href="#headers"><span class="num">05</span>Headers</a></li>
+        <li><a href="#csp"><span class="num">06</span>CSP</a></li>
+        <li><a href="#cookies"><span class="num">07</span>Cookies</a></li>
+        <li><a href="#analizador"><span class="num">08</span>Analizar respuesta HTTP</a></li>
+        <li><a href="#codigo"><span class="num">09</span>Revisar mi código</a></li>
+        <li><a href="#secretos"><span class="num">10</span>¿Hardcodear u ofuscar?</a></li>
+        <li><a href="#dependencias"><span class="num">11</span>Librerías</a></li>
+        <li><a href="#guias"><span class="num">12</span>Guías completas</a></li>
+      </ol>
+    </nav>
+
+    <main id="contenido">
+
+      <!-- 01 ============================================================ -->
+      <section class="panel hero" id="inicio" tabindex="-1" aria-labelledby="t-inicio">
+        <p class="section-kicker">Guía rápida · Herramienta</p>
+        <h1 id="t-inicio">Programa seguro desde el primer commit</h1>
+        <p class="lead">Lo esencial para que tu código llegue a producción sin las vulnerabilidades que siempre aparecen en una auditoría. Arma tu checklist, genera la configuración de headers, CSP y cookies, analiza la respuesta de tu servidor y revisa tu código. <strong>Todo se procesa en tu navegador; nada se envía a ningún servidor.</strong></p>
+        <ul class="hero-stats" aria-label="Marcos de referencia">
+          <li>OWASP Top 10:2025</li>
+          <li>OWASP ASVS 5.0</li>
+          <li>OWASP API Top 10</li>
+          <li>OWASP LLM Top 10 2025</li>
+          <li>CWE Top 25 (2025)</li>
+          <li>Mozilla TLS</li>
+        </ul>
+
+        <h2 class="visually-hidden">Las 12 reglas de oro</h2>
+        <ol class="rules">
+          <li><strong>No confíes en nada del cliente.</strong><span>Formularios, query, headers, cookies, JSON, archivos y respuestas de IA se validan en el servidor.</span></li>
+          <li><strong>Nunca concatenes entrada.</strong><span>Ni en SQL, ni en comandos, plantillas o <code>eval</code>. Parametriza.</span></li>
+          <li><strong>Escapa lo que pintas.</strong><span>Autoescape y <code>textContent</code>; nunca <code>innerHTML</code> con datos.</span></li>
+          <li><strong>Permisos en cada endpoint y objeto.</strong><span>Ocultar un botón no es seguridad.</span></li>
+          <li><strong>Cero secretos en el código.</strong><span>Ni contraseñas, ni API keys, ni tokens, ni llaves.</span></li>
+          <li><strong>Contraseñas con Argon2id o bcrypt.</strong><span>Nunca MD5, SHA-1 ni SHA-256.</span></li>
+          <li><strong>Solo HTTPS (TLS 1.2/1.3).</strong><span>Y nunca <code>verify=False</code>.</span></li>
+          <li><strong>Headers de seguridad y CSP.</strong><span>En todas las respuestas.</span></li>
+          <li><strong>Cookies con flags.</strong><span><code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code> y prefijo <code>__Host-</code>.</span></li>
+          <li><strong>Librerías actualizadas y fijadas.</strong><span>Lockfile, auditoría y Dependabot/Renovate.</span></li>
+          <li><strong>Errores genéricos al usuario.</strong><span>El detalle técnico, solo en el log del servidor.</span></li>
+          <li><strong>IA con cuidado.</strong><span>No pegues secretos ni datos de clientes; revisa todo lo que sugiera.</span></li>
+        </ol>
+      </section>
+
+      <!-- 02 ============================================================ -->
+      <section class="panel" id="checklist" tabindex="-1" aria-labelledby="t-checklist">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-checklist">Mi checklist: ¿qué vas a construir hoy?</h2>
+        <p class="lead">Marca lo que tocas en este cambio y obtén solo los controles que aplican. Tu progreso se guarda en este navegador y puedes exportarlo en Markdown para pegarlo en el Pull Request.</p>
+        <div id="checklist-app">
+          <p class="empty">Esta herramienta requiere JavaScript. Consulta el Go-Live Security Gate en el <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/README.md">README del repositorio</a>.</p>
+        </div>
+      </section>
+
+      <!-- 03 ============================================================ -->
+      <section class="panel" id="si-o-no" tabindex="-1" aria-labelledby="t-sino">
+        <p class="section-kicker">Respuestas rápidas</p>
+        <h2 id="t-sino">¿Sí o no?</h2>
+        <div class="field">
+          <label for="qa-search">Buscar pregunta</label>
+          <input type="search" id="qa-search" placeholder="Ej.: cookies, librerías, ofuscar, localStorage…" autocomplete="off" aria-describedby="qa-count">
+          <span class="hint" id="qa-count" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="qa-caption">
+          <table id="qa-table">
+            <caption id="qa-caption" class="visually-hidden">Preguntas frecuentes de desarrollo seguro</caption>
+            <thead><tr><th scope="col">Pregunta</th><th scope="col">Respuesta</th></tr></thead>
+            <tbody>
+              <tr><td>¿Hay que actualizar las librerías?</td><td><span class="answer si">SÍ</span>Revisa CVEs en cada PR y cada semana; críticas en días, no meses. <a href="#dependencias">Ver plazos</a>.</td></tr>
+              <tr><td>¿Puedo usar <code>"express": "*"</code> o <code>FROM node:latest</code>?</td><td><span class="answer no">NO</span>Fija versiones y versiona el lockfile.</td></tr>
+              <tr><td>¿Tengo que poner headers de seguridad?</td><td><span class="answer si">SÍ</span>En todas las respuestas. <a href="#headers">Generador</a>.</td></tr>
+              <tr><td>¿Hay que poner CSP?</td><td><span class="answer si">SÍ</span>Empieza en <code>Report-Only</code> y luego hazla obligatoria. <a href="#csp">Generador</a>.</td></tr>
+              <tr><td>¿Las cookies llevan flags?</td><td><span class="answer si">SÍ</span><code>HttpOnly; Secure; SameSite=Strict</code> (o <code>Lax</code>) y prefijo <code>__Host-</code>. <a href="#cookies">Generador</a>.</td></tr>
+              <tr><td>¿Basta con validar los inputs en el frontend?</td><td><span class="answer no">NO</span>El frontend es experiencia de usuario; la validación real va en el backend. <a href="#inputs">Ver cómo</a>.</td></tr>
+              <tr><td>¿Hardcodeo la API key o la contraseña "solo para probar"?</td><td><span class="answer no">NUNCA</span>Variables de entorno o bóveda. Lo que entra en Git se queda en el historial.</td></tr>
+              <tr><td>¿Ofusco el código para proteger mi API key?</td><td><span class="answer no">NO</span>Ofuscar no protege secretos: todo lo enviado al cliente se puede leer. Lo sensible va en el servidor.</td></tr>
+              <tr><td>¿Minifico el JS de producción?</td><td><span class="answer si">SÍ</span>Y sin source maps públicos.</td></tr>
+              <tr><td>¿Guardo el JWT en <code>localStorage</code>?</td><td><span class="answer no">NO</span>Cookie <code>HttpOnly</code>.</td></tr>
+              <tr><td>¿Uso <code>eval()</code>, <code>exec()</code>, <code>os.system()</code> o <code>shell=True</code>?</td><td><span class="answer no">NO</span>Hay alternativas seguras para cada caso.</td></tr>
+              <tr><td>¿Devuelvo el stack trace en la respuesta de la API?</td><td><span class="answer no">NO</span>Mensaje genérico con <code>error_id</code>; el detalle, al log.</td></tr>
+              <tr><td>¿Desactivo la verificación SSL porque "no conecta"?</td><td><span class="answer no">NO</span>Corrige el certificado o configura la CA interna.</td></tr>
+              <tr><td>¿Uso datos reales de clientes en desarrollo o QA?</td><td><span class="answer no">NO</span>Datos sintéticos o enmascarados.</td></tr>
+              <tr><td>¿Puedo cambiar datos con un GET (<code>/borrar?id=5</code>)?</td><td><span class="answer no">NO</span>POST/PUT/DELETE con token anti-CSRF.</td></tr>
+              <tr><td>¿Uso MD5 o SHA-256 para guardar contraseñas?</td><td><span class="answer no">NO</span>Argon2id o bcrypt (cost ≥ 12).</td></tr>
+              <tr><td>¿Uso <code>float</code> para montos de dinero?</td><td><span class="answer no">NO</span><code>Decimal</code> o enteros en centavos.</td></tr>
+              <tr><td>¿Pego mi <code>.env</code> o datos de clientes en ChatGPT/Copilot para depurar?</td><td><span class="answer no">NO</span>Reemplaza por marcadores y datos sintéticos; usa solo herramientas aprobadas.</td></tr>
+              <tr><td>¿Instalo la librería que me sugirió la IA sin revisarla?</td><td><span class="answer no">NO</span>Verifica que exista, esté mantenida y tenga licencia permitida.</td></tr>
+              <tr><td>¿Pongo <code>Access-Control-Allow-Origin: *</code> con credenciales?</td><td><span class="answer no">NO</span>Allow-list exacta de orígenes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 04 ============================================================ -->
+      <section class="panel" id="inputs" tabindex="-1" aria-labelledby="t-inputs">
+        <p class="section-kicker">Entradas</p>
+        <h2 id="t-inputs">Inputs: cómo debe ir cada entrada</h2>
+        <p><strong>Regla:</strong> valida en el servidor con un <strong>esquema estricto</strong>: tipo, longitud, rango y formato; acepta solo lo permitido (allow-list) y rechaza campos extra.</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Validación por tipo de dato">
+          <table>
+            <thead><tr><th scope="col">Tipo de dato</th><th scope="col">Cómo validarlo</th></tr></thead>
+            <tbody>
+              <tr><td>Texto libre</td><td>Longitud mínima y máxima, sin caracteres de control; se escapa al mostrarlo.</td></tr>
+              <tr><td>Email, teléfono, documento</td><td>Formato con regex o tipo específico (<code>EmailStr</code>, <code>z.string().email()</code>).</td></tr>
+              <tr><td>IDs</td><td>Tipo estricto (<code>int &gt; 0</code>, UUID) <strong>y</strong> verificación de que el recurso pertenece al usuario.</td></tr>
+              <tr><td>Números o montos</td><td>Rango (<code>min</code>/<code>max</code>); montos en <code>Decimal</code> o centavos enteros, <strong>nunca <code>float</code></strong>.</td></tr>
+              <tr><td>Valores de una lista</td><td>Enumeración cerrada (<code>Literal[...]</code>, <code>z.enum([...])</code>).</td></tr>
+              <tr><td>URLs</td><td>Solo <code>https://</code> y dominios permitidos si el servidor las va a llamar (evita SSRF).</td></tr>
+              <tr><td>Archivos</td><td>Tamaño máximo, tipo real por <em>magic bytes</em>, nombre generado por el servidor, fuera del webroot.</td></tr>
+              <tr><td>JSON completo</td><td>Rechaza campos no declarados (<code>extra="forbid"</code> / <code>.strict()</code>).</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-2">
+          <div class="code-block"><span class="lang">Python · Pydantic</span><pre><code>from typing import Literal
+from pydantic import BaseModel, Field, EmailStr
+
+class CrearUsuario(BaseModel):
+    model_config = {"extra": "forbid"}   # rechaza "role": "admin"
+    nombre: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    edad: int = Field(ge=18, le=120)
+    plan: Literal["basico", "pro"]</code></pre></div>
+          <div class="code-block"><span class="lang">TypeScript · Zod</span><pre><code>const CrearUsuario = z.object({
+  nombre: z.string().min(2).max(80),
+  email: z.string().email(),
+  edad: z.number().int().min(18).max(120),
+  plan: z.enum(["basico", "pro"]),
+}).strict();
+
+const data = CrearUsuario.parse(req.body);</code></pre></div>
+        </div>
+        <h3>Y úsala de forma segura</h3>
+        <div class="code-block"><span class="lang">Python</span><pre><code># NO: concatenar
+cur.execute(f"SELECT * FROM users WHERE email = '{email}'")
+subprocess.run(f"ping {host}", shell=True)
+
+# SÍ: parametrizar y pasar argumentos como lista
+cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+subprocess.run(["ping", "-c", "1", str(ipaddress.ip_address(host))], timeout=5)</code></pre></div>
+        <h3>Y en la salida: evita XSS</h3>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Salidas seguras">
+          <table>
+            <thead><tr><th scope="col">NO</th><th scope="col">SÍ</th></tr></thead>
+            <tbody>
+              <tr><td><code>el.innerHTML = dato</code></td><td><code>el.textContent = dato</code></td></tr>
+              <tr><td><code>{{ dato | safe }}</code> / <code>dangerouslySetInnerHTML</code> sin sanitizar</td><td>Autoescape; si necesitas HTML, sanitiza con <strong>DOMPurify</strong> o <strong>nh3</strong>.</td></tr>
+              <tr><td><code>&lt;a href="{{ url_usuario }}"&gt;</code></td><td>Valida que empiece por <code>https:</code> (bloquea <code>javascript:</code>).</td></tr>
+              <tr><td><code>&lt;script&gt;var x = {{ dato }}&lt;/script&gt;</code></td><td>Pasa datos con <code>tojson</code> o un atributo <code>data-*</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="guide-ref">Detalle: <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/01_Codigo_y_Prevencion_de_Vulnerabilidades/01_Inyecciones_SQLi_Command_RCE.md">01.01 Inyecciones</a> · <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/01_Codigo_y_Prevencion_de_Vulnerabilidades/02_XSS_CSRF_y_Seguridad_Frontend.md">01.02 XSS y CSRF</a></p>
+      </section>
+
+      <!-- 05 ============================================================ -->
+      <section class="panel" id="headers" tabindex="-1" aria-labelledby="t-headers">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-headers">Headers de seguridad: cuáles y para qué sirve cada uno</h2>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Cabeceras de seguridad">
+          <table class="wide">
+            <thead><tr><th scope="col">Header</th><th scope="col">Valor recomendado</th><th scope="col">Para qué sirve</th></tr></thead>
+            <tbody>
+              <tr><td><code>Strict-Transport-Security</code></td><td><code>max-age=63072000; includeSubDomains</code></td><td>Obliga al navegador a usar siempre HTTPS; nadie en la red puede forzar HTTP.</td></tr>
+              <tr><td><code>Content-Security-Policy</code></td><td><a href="#csp">Ver sección CSP</a></td><td>Define qué scripts, estilos e iframes puede cargar la página; barrera principal contra XSS.</td></tr>
+              <tr><td><code>X-Content-Type-Options</code></td><td><code>nosniff</code></td><td>Impide que el navegador "adivine" el tipo y ejecute un upload como script.</td></tr>
+              <tr><td><code>X-Frame-Options</code></td><td><code>DENY</code></td><td>Impide cargar tu página en un iframe ajeno (clickjacking).</td></tr>
+              <tr><td><code>Referrer-Policy</code></td><td><code>strict-origin-when-cross-origin</code></td><td>No filtra la URL completa (tokens, IDs) a otros sitios.</td></tr>
+              <tr><td><code>Permissions-Policy</code></td><td><code>camera=(), microphone=(), geolocation=()</code></td><td>Apaga APIs del navegador que no usas para que un script inyectado no pueda usarlas.</td></tr>
+              <tr><td><code>Cross-Origin-Opener-Policy</code></td><td><code>same-origin</code> (o <code>same-origin-allow-popups</code> si usas OAuth/pagos en popup)</td><td>Aísla tu ventana de las abiertas por otros sitios.</td></tr>
+              <tr><td><code>Cache-Control</code></td><td><code>no-store</code> en respuestas privadas</td><td>Evita datos sensibles en caché del navegador o proxies.</td></tr>
+              <tr><td><code>Server</code> con versión, <code>X-Powered-By</code></td><td><strong>Eliminarlos</strong></td><td>No regales la tecnología y versión exactas para buscar exploits.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Generador de configuración</h3>
+        <div id="headers-app"></div>
+        <p class="guide-ref">Detalle: <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/03_Infraestructura_Transporte_y_Dependencias/03_Hardening_APIs_y_Servidores.md">03.03 Hardening de APIs y Servidores</a></p>
+      </section>
+
+      <!-- 06 ============================================================ -->
+      <section class="panel" id="csp" tabindex="-1" aria-labelledby="t-csp">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-csp">CSP (Content Security Policy)</h2>
+        <p><strong>Qué es:</strong> la lista de fuentes desde las que tu página puede cargar y ejecutar contenido. Si un atacante logra inyectar un <code>&lt;script&gt;</code>, el navegador <strong>no lo ejecuta</strong> porque no está autorizado.</p>
+        <div class="decision-grid">
+          <div class="decision"><h3>Sin <code>'unsafe-inline'</code> ni <code>'unsafe-eval'</code></h3><p>Anulan la protección contra XSS.</p></div>
+          <div class="decision"><h3>Sin comodines ni listas de dominios</h3><p>Usa nonce o hash + <code>'strict-dynamic'</code>; las allow-lists se evaden con JSONP y redirecciones.</p></div>
+          <div class="decision"><h3>Despliega en <code>Report-Only</code> primero</h3><p>Ves qué se rompería antes de bloquear; luego la haces obligatoria.</p></div>
+        </div>
+        <div class="grid-2">
+          <div><h3>Generador</h3><div id="csp-builder"></div></div>
+          <div><h3>Analizar una CSP existente</h3><div id="csp-analyzer"></div></div>
+        </div>
+        <p class="guide-ref">Detalle: <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/01_Codigo_y_Prevencion_de_Vulnerabilidades/02_XSS_CSRF_y_Seguridad_Frontend.md">01.02 XSS, CSRF y Seguridad Frontend (sección 3)</a></p>
+      </section>
+
+      <!-- 07 ============================================================ -->
+      <section class="panel" id="cookies" tabindex="-1" aria-labelledby="t-cookies">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-cookies">Cookies: flags obligatorias</h2>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Flags de cookies">
+          <table>
+            <thead><tr><th scope="col">Flag</th><th scope="col">Para qué sirve</th></tr></thead>
+            <tbody>
+              <tr><td><code>HttpOnly</code></td><td>JavaScript no puede leer la cookie: un XSS no roba la sesión.</td></tr>
+              <tr><td><code>Secure</code></td><td>Solo viaja por HTTPS.</td></tr>
+              <tr><td><code>SameSite=Strict</code> / <code>Lax</code></td><td>No se envía en peticiones desde otros sitios (mitiga CSRF).</td></tr>
+              <tr><td>Prefijo <code>__Host-</code></td><td>Obliga a <code>Secure</code> y <code>Path=/</code>, prohíbe <code>Domain</code>: un subdominio no puede sobrescribirla.</td></tr>
+              <tr><td><code>Max-Age</code> corto</td><td>Limita el tiempo útil de una sesión robada.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><p>Además: regenera el ID de sesión al hacer login, invalídalo en el servidor al hacer logout, usa token anti-CSRF en formularios y <strong>nunca</strong> cambies estado con GET.</p></div>
+        <h3>Generador de cookie</h3>
+        <div id="cookie-app"></div>
+      </section>
+
+      <!-- 08 ============================================================ -->
+      <section class="panel" id="analizador" tabindex="-1" aria-labelledby="t-analizador">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-analizador">Analizar la respuesta HTTP de mi aplicación</h2>
+        <p>Ejecuta <code>curl -sI https://tu-app.com</code> (o copia los <em>Response Headers</em> desde DevTools → Network) y pégalos aquí. Revisa headers, CSP, cookies, CORS y fugas de versión: lo mismo que verá el auditor.</p>
+        <div id="http-app"></div>
+      </section>
+
+      <!-- 09 ============================================================ -->
+      <section class="panel" id="codigo" tabindex="-1" aria-labelledby="t-codigo">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-codigo">Revisar mi código (escáner local)</h2>
+        <p>Pega un fragmento (Python, JS/TS, Java, configuración, Dockerfile, <code>.env</code>…) y detecta secretos hardcodeados y patrones peligrosos antes del commit. Es una revisión rápida por patrones: <strong>no sustituye</strong> a Semgrep, CodeQL, gitleaks ni a la revisión humana.</p>
+        <div id="code-app"></div>
+      </section>
+
+      <!-- 10 ============================================================ -->
+      <section class="panel" id="secretos" tabindex="-1" aria-labelledby="t-secretos">
+        <p class="section-kicker">Decisiones</p>
+        <h2 id="t-secretos">¿Hardcodear? ¿Ofuscar?</h2>
+        <div class="callout danger"><p><strong>Regla absoluta: NO se hardcodean</strong> contraseñas, API keys, tokens, llaves privadas ni cadenas de conexión. Tampoco en tests, Dockerfiles, <code>docker-compose.yml</code>, <code>.env</code> versionado ni notebooks.</p></div>
+        <div class="grid-2">
+          <div class="code-block"><span class="lang">Python · NO</span><pre><code>API_KEY = "sk_live_51H..."
+JWT_SECRET = os.getenv("JWT_SECRET", "changeme")</code></pre></div>
+          <div class="code-block"><span class="lang">Python · SÍ</span><pre><code>from pydantic_settings import BaseSettings
+from pydantic import SecretStr
+
+class Settings(BaseSettings):
+    api_key: SecretStr      # sin default: si falta, no arranca
+    jwt_secret: SecretStr
+
+settings = Settings()</code></pre></div>
+        </div>
+        <div class="decision-grid">
+          <div class="decision"><h3>Dónde van los secretos</h3><p>Vault, AWS Secrets Manager o Azure Key Vault; variables de entorno inyectadas en runtime; en CI/CD, OIDC en lugar de llaves fijas.</p></div>
+          <div class="decision"><h3>Antes del commit</h3><p><code>gitleaks</code> como pre-commit hook y <code>.gitignore</code> con <code>.env*</code>, <code>*.pem</code>, <code>*.key</code>.</p></div>
+          <div class="decision"><h3>Si se filtró uno</h3><p>Primero <strong>revoca y rota</strong>; después limpia el historial. Borrarlo en otro commit no basta.</p></div>
+          <div class="decision"><h3>Variables públicas</h3><p><code>NEXT_PUBLIC_</code>, <code>VITE_</code>, <code>REACT_APP_</code> terminan en el bundle: son públicas.</p></div>
+        </div>
+        <h3>¿Ofuscar? Todo lo que se envía al cliente se puede leer</h3>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Ofuscación y cliente">
+          <table>
+            <thead><tr><th scope="col">¿Qué hago?</th><th scope="col">Respuesta</th></tr></thead>
+            <tbody>
+              <tr><td>Minificar el JS en producción</td><td><span class="answer si">SÍ</span>Terser/esbuild: reduce tamaño, elimina comentarios y logs.</td></tr>
+              <tr><td>Publicar source maps (<code>.map</code>)</td><td><span class="answer no">NO</span>Genéralos en modo <code>hidden</code> y súbelos solo a Sentry.</td></tr>
+              <tr><td>Ofuscar todo el frontend</td><td><span class="answer no">NO</span>Solo módulos de alto valor (anti-bot), midiendo el rendimiento.</td></tr>
+              <tr><td>API keys privadas en el frontend o la app</td><td><span class="answer no">NUNCA</span>El frontend llama a tu backend; el backend al tercero.</td></tr>
+              <tr><td>Precios, descuentos o permisos en el cliente</td><td><span class="answer no">NO</span>El cliente envía la intención; el servidor calcula y valida.</td></tr>
+              <tr><td>App Android release</td><td><span class="answer si">SÍ</span>R8/minify, <code>debuggable=false</code>, <code>allowBackup=false</code>, tokens en Keystore.</td></tr>
+              <tr><td>App iOS release</td><td><span class="answer si">SÍ</span>Tokens en Keychain y símbolos eliminados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="guide-ref">Detalle: <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/02_Criptografia_Secretos_y_Proteccion_Codigo/01_Gestion_de_Secretos_y_API_Keys.md">02.01 Secretos</a> · <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/02_Criptografia_Secretos_y_Proteccion_Codigo/03_Ofuscacion_y_Endurecimiento_Cliente.md">02.03 Ofuscación</a></p>
+      </section>
+
+      <!-- 11 ============================================================ -->
+      <section class="panel" id="dependencias" tabindex="-1" aria-labelledby="t-deps">
+        <p class="section-kicker">Herramienta</p>
+        <h2 id="t-deps">Librerías y dependencias: sí, hay que actualizarlas</h2>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Reglas de dependencias">
+          <table>
+            <thead><tr><th scope="col">Regla</th><th scope="col">Cómo</th></tr></thead>
+            <tbody>
+              <tr><td>Fija versiones</td><td>Lockfile versionado (<code>package-lock.json</code>, <code>pnpm-lock.yaml</code>, <code>uv.lock</code>, <code>requirements.txt</code> con hashes).</td></tr>
+              <tr><td>Instala reproducible en CI</td><td><code>npm ci</code>, <code>uv sync --frozen</code>, <code>pip install --require-hashes</code>.</td></tr>
+              <tr><td>Escanea en cada PR y cada semana</td><td><code>npm audit</code>, <code>pip-audit</code>, <code>osv-scanner</code>, <code>trivy image</code>.</td></tr>
+              <tr><td>Automatiza actualizaciones</td><td>Dependabot o Renovate (también Docker y GitHub Actions).</td></tr>
+              <tr><td>Imágenes mínimas y fijadas</td><td><code>python:3.13-slim@sha256:...</code> o distroless; nunca <code>:latest</code>.</td></tr>
+              <tr><td>Sin runtimes EOL</td><td>Revisa <a href="https://endoflife.date/">endoflife.date</a>.</td></tr>
+              <tr><td>Revisa cada librería nueva</td><td>¿Existe? ¿Mantenida? ¿Popular? ¿Licencia permitida? Ojo con nombres inventados por la IA.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-2">
+          <div><h3>Calculadora de plazo de remediación</h3><div id="sla-app"></div></div>
+          <div><h3>Comandos de auditoría</h3><div id="deps-cmds"></div></div>
+        </div>
+        <p class="guide-ref">Detalle: <a href="https://github.com/RogerF5-Security/Gu-a-Practica-Para-Desarrollo-Seguro/blob/main/Desarrollo_Seguro/03_Infraestructura_Transporte_y_Dependencias/02_Gestion_de_Dependencias_y_Versiones.md">03.02 Gestión de Dependencias</a></p>
+      </section>
+
+      <!-- 12 ============================================================ -->
+      <section class="panel" id="guias" tabindex="-1" aria-labelledby="t-guias">
+        <p class="section-kicker">Referencia</p>
+        <h2 id="t-guias">Guías completas</h2>
+        <p>Cada guía incluye el principio de seguridad, ejemplos <em>vulnerable vs. seguro</em> (Python, JS/TS, SQL, Docker/Nginx) y checklist antes de merge/deploy. Disponibles en Markdown y Word.</p>
+        <ul class="guides" id="guides-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <p>Guía Práctica de Desarrollo Seguro · RogerF5 Security. Basada en OWASP Top 10:2025, ASVS 5.0, API Security Top 10, LLM Top 10 2025, CWE Top 25 (2025), Mozilla Server Side TLS y CIS Benchmarks.</p>
+      <p>Esta página aplica lo que recomienda dentro de lo que permite GitHub Pages: CSP estricta sin scripts inline ni recursos de terceros, Trusted Types y ningún dato enviado fuera de tu navegador. Las herramientas son de apoyo y no sustituyen una revisión de seguridad ni un pentest.</p>
+    </div>
+  </footer>
+</body>
+</html>

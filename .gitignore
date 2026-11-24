@@ -1,0 +1,17 @@
+# Entorno local
+.claude/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+Thumbs.db
+
+# Archivos temporales de Word
+~$*.docx
+
+# Secretos (nunca se versionan)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
